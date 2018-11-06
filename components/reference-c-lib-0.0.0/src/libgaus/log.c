@@ -14,7 +14,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
-#include <syslog.h>
+#ifndef GAUS_USE_RAWLOG
+  #include <syslog.h>
+#endif
 #include <time.h>
 
 #define LOG_MAX_LEN 1024 /* Default maximum length of syslog messages */
@@ -31,7 +33,9 @@
 
 static int verbosity_level = VERBOSITY;
 static int log_to_stdout = 1;
+#ifndef GAUS_USE_RAWLOG
 static int syslog_enabled = SYSLOG_ENABLED;
+#endif
 static int systemd_output = 0;
 
 static void log_raw(int level, const char *msg);
@@ -48,9 +52,11 @@ void set_loglevel(int level) {
 }
 
 static void log_raw(int level, const char *msg) {
+#ifndef GAUS_USE_RAWLOG
   static const int syslog_level_map[] = {LOG_DEBUG, LOG_INFO, LOG_NOTICE,
                                          LOG_WARNING, LOG_ERR};
   static const int systemd_level_map[] = {7, 6, 5, 4, 3};
+#endif
   char buf[64];
   int rawmode = (level & L_RAW);
   level &= 0xff; /* clear flags */
@@ -62,7 +68,9 @@ static void log_raw(int level, const char *msg) {
     if (rawmode) {
       fprintf(stdout, "%s\n", msg);
     } else if (systemd_output) {
+#ifndef GAUS_USE_RAWLOG
       fprintf(stdout, "<%d>%s\n", systemd_level_map[level], msg);
+#endif
     } else {
       int off;
       struct timeval tv;
@@ -75,9 +83,12 @@ static void log_raw(int level, const char *msg) {
     }
     fflush(stdout);
   }
+#ifndef GAUS_USE_RAWLOG
   if (syslog_enabled) {
     syslog(syslog_level_map[level], "%s", msg);
   }
+#endif
+
 }
 
 void logging(int level, const char *fmt, ...) {
