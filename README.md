@@ -1,2 +1,5 @@
-# esp32-freertos-demo
-A demo built using the gaus/reference-c-lib and FreeRTOS.  Designed to run on an ESP32 Huzzah32
+# Gaus ESP32 FreeRTOS Demo
+
+A simple ESP32 Demo intended to run on a Huzzah32 board.
+
+The project is licenced with MIT licence except subprojects, which have relevant licence files included
