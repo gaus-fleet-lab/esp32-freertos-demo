@@ -3,3 +3,37 @@
 A simple ESP32 Demo intended to run on a Huzzah32 board.
 
 The project is licenced with MIT licence except subprojects, which have relevant licence files included
+
+While the source size is quite large, this is because we've grabbed a copy of:
+- libcurl
+- libjansson
+- libgaus
+
+If you're coming here with an interest to integrate the
+[gaus c reference lib](https://github.com/gaus-fleet-lab/reference-c-lib) with your own code you should start by
+checking out: (gaus_demo.c)[https://github.com/gaus-fleet-lab/esp32-freertos-demo/blob/master/main/gaus_demo.c].  You
+can also pretty much ignore the files under `components` as they're just external libs copied into this project,
+`libgaus` plus it's two dependencies: `libcurl`, and `libjansson`.
+
+# Building
+
+In order to build you'll need the esp32 tools as described here: [Esp32 Getting Started](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html)
+
+Once you have all of the tools installed you'll need to:
+- Install `automake`
+- Install `libtool`
+- In jansson directory run:
+  - `autoreconf --install`
+  - `./configure --host=xtensa-esp32`
+- From project root directory run:
+  - `make`
+  - `make flash` (To flash)
+  - `make monitor` (To see log messages from the device)
+
+# Program flow
+
+Currently the program does the following:
+- Initialize libgaus
+- Print some nice information
+- Sleep a while
+- Restart
