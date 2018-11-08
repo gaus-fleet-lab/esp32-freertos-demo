@@ -72,9 +72,12 @@ void gaus_communication_task(void *taskData) {
     vTaskDelay(1000 / portTICK_PERIOD_MS);
   }
 
-  //Print gaus version and initialize library
+  //Print Gaus library version
   gaus_version_t version = gaus_client_library_version();
   ESP_LOGI(TAG, "Gaus Client Library Version: v%d.%d.%d", version.major, version.minor, version.patch);
+
+  // GAUS LIBRARY STEP 1: Initalize library
+  // Only required if using library
   gaus_error_t *err = gaus_global_init(GAUS_SERVER_URL, NULL);
   if (err) {
     ESP_LOGE(TAG, "An error occurred initializing!");
@@ -84,7 +87,8 @@ void gaus_communication_task(void *taskData) {
   }
 
   //Fixme: Should only register if not registered before.
-  //Register device:
+  // GAUS LIBRARY STEP 2: Register device
+  // Only required if device is unregistered.  The results of this should be persisted to the device.
   err = gaus_register(GAUS_PRODUCT_ACCESS, GAUS_PRODUCT_SECRET, GAUS_DEVICE_ID,
                       &device_access, &device_secret, &poll_interval);
   if (err) {
@@ -97,6 +101,8 @@ void gaus_communication_task(void *taskData) {
   }
 
   //Fixme: Should load access/secret from storage.
+  // GAUS LIBRARY STEP 3: Authenticate device
+  // We need to collect a "session" to use for all future communications with Gaus system.
   err = gaus_authenticate(device_access, device_secret, &session);
   if (err) {
     ESP_LOGE(TAG, "An error occurred authenticating!");
@@ -109,6 +115,9 @@ void gaus_communication_task(void *taskData) {
 
   //Main Loop
   while (1) {
+    // GAUS LIBRARY STEP 4: Check for updates
+    // Use session to check for updates.  If session has expired, we should aquire a new session
+    // by calling gaus_authenticate() again.
     err = gaus_check_for_updates(&session, filterCount, filters, &updateCount, &updates);
     if (err) {
       ESP_LOGE(TAG, "An error occurred checking for updates!");
@@ -149,7 +158,7 @@ void app_main() {
     ESP_LOGE(TAG, "Failed to connect to wifi!");
   }
 
-  //Spin up a new task to handle gaus communications
+  //Spin up a new task to handle Gaus communications
   xTaskCreatePinnedToCore(&gaus_communication_task, "gaus_communication_task", 10 * 1024, NULL, 5, NULL,
                           tskNO_AFFINITY);
 }
