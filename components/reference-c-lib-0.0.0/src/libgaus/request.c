@@ -22,6 +22,10 @@
 #define VERSION "v0.0.0"
 #endif
 
+//Fixme: We should check certificates:
+// Do not check certificates yet
+#define GAUS_NO_CA_CHECK
+
 typedef struct FileResponse {
   int fd;
   FILE *file;
@@ -206,6 +210,10 @@ static int request_post(const char *url, const char *auth_token, const char *pay
   gaus_curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, response_writer);
   gaus_curl_easy_setopt(curl, CURLOPT_WRITEDATA, response);
 
+#ifdef GAUS_NO_CA_CHECK
+  logging(L_DEBUG, "skipping verify peer certificate");
+  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+#endif
   logging(L_DEBUG, "POST %s", url);
   status = gaus_curl_easy_perform(curl);
   if (status != 0) {
@@ -252,6 +260,11 @@ static int request_get(const char *url, const char *auth_token,
   if (!curl) {
     goto error;
   }
+
+#ifdef GAUS_NO_CA_CHECK
+  logging(L_DEBUG, "skipping verify peer certificate");
+  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+#endif
 
   gaus_curl_easy_setopt(curl, CURLOPT_URL, url);
   gaus_curl_easy_setopt(curl, CURLOPT_HTTPGET, 1L);
