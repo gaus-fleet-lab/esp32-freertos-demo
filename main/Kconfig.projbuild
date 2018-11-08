@@ -14,4 +14,46 @@ config WIFI_PASSWORD
 
 		Can be left blank if the network has no security set.
 
+config GAUS_SERVER_URL
+    string "Gaus server url"
+	default "https://gaus.incubation.io/"
+	help
+		The url that this device should communicate with Gaus
+		on.
+
+		MUST be set in order for demo to work.
+
+config GAUS_PRODUCT_ACCESS
+    string "Gaus Product Access"
+	default ""
+	help
+		The product access key for the product family this
+		device belongs to.
+
+		Can be found in the Gaus admin UI when creating a new
+		product.
+
+		MUST be set in order for the demo to work.
+
+config GAUS_PRODUCT_SECRET
+    string "Gaus Product Secret"
+	default ""
+	help
+		The product secret key for the product family this
+		device belongs to.
+
+		Can be found in the Gaus admin UI when creating a new
+		product.
+
+		MUST be set in order for the demo to work.
+
+config GAUS_DEVICE_ID
+    string "Gaus Device ID"
+    default ""
+    help
+        The unique identifier for this device.
+
+        Can be set to something like a MAC address.
+
+        MUST be set in order for the demo to work.
 endmenu
