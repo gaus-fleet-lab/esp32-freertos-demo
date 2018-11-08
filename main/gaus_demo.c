@@ -13,7 +13,7 @@
 #include "esp_system.h"
 #include "esp_spi_flash.h"
 #include "gaus/gaus_client.h"
-
+#include "curl/curl.h"
 #include "esp_log.h"
 
 #include "nvs_flash.h"
