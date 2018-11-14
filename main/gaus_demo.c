@@ -28,9 +28,13 @@
 #include "nvs_flash.h"
 #include "wifi.h"
 #include "gaus_helpers.h"
+#include "nvs.h"
+#include "driver/gpio.h"
 
 //Tag for logging
 static const char *TAG = "gaus-demo";
+
+#define BLINK_GPIO 13
 
 
 /* The examples use simple configuration that you can set via
@@ -54,7 +58,7 @@ static const char *TAG = "gaus-demo";
 void gaus_communication_task(void *taskData) {
   char *device_access;
   char *device_secret;
-  unsigned int poll_interval;
+  uint32_t poll_interval;
   gaus_session_t session;
 
   unsigned int filterCount = 1;
@@ -67,10 +71,11 @@ void gaus_communication_task(void *taskData) {
   unsigned int updateCount = 0;
   gaus_update_t *updates = NULL;
 
-  for (int i = 5; i >= 0; i--) {
-    ESP_LOGI(TAG, "Starting test in %d seconds...", i);
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
-  }
+
+  //Setup LED to blink:
+  gpio_pad_select_gpio(BLINK_GPIO);
+  /* Set the GPIO as a push/pull output */
+  gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
 
   //Print Gaus library version
   gaus_version_t version = gaus_client_library_version();
@@ -86,21 +91,36 @@ void gaus_communication_task(void *taskData) {
     ESP_LOGI(TAG, "Gaus library initialized!");
   }
 
-  //Fixme: Should only register if not registered before.
-  // GAUS LIBRARY STEP 2: Register device
-  // Only required if device is unregistered.  The results of this should be persisted to the device.
-  err = gaus_register(GAUS_PRODUCT_ACCESS, GAUS_PRODUCT_SECRET, GAUS_DEVICE_ID,
-                      &device_access, &device_secret, &poll_interval);
-  if (err) {
-    ESP_LOGE(TAG, "An error occurred registering!");
-    ESP_LOGE(TAG, "error_type: %d, http_error_code: %d, description: %s", err->error_type, err->http_error_code,
-             err->description);
-    goto FAIL;
+  //Retrieve device access, device secret, poll interval from NonVolatileStorage (NVS)
+  esp_err_t pi_error = get_nvs_u32("poll_interval", &poll_interval);
+  esp_err_t da_error = get_nvs_str("device_access", &device_access);
+  esp_err_t ds_error = get_nvs_str("device_secret", &device_secret);
+
+  //Check if we've previously registered this device.
+  if (pi_error == ESP_OK && da_error == ESP_OK && ds_error == ESP_OK) {
+    ESP_LOGI(TAG, "Skipping registration as this device has previously been registered!");
+    ESP_LOGI(TAG, "poll_interval: %d, device_access: %s, device_secret: %s", poll_interval, device_access,
+             device_secret);
   } else {
-    ESP_LOGI(TAG, "Gaus registering!");
+    // GAUS LIBRARY STEP 2: Register device
+    // Only required if device is unregistered.  The results of this should be persisted to the device.
+    err = gaus_register(GAUS_PRODUCT_ACCESS, GAUS_PRODUCT_SECRET, GAUS_DEVICE_ID,
+                        &device_access, &device_secret, &poll_interval);
+    if (err) {
+      ESP_LOGE(TAG, "An error occurred registering!");
+      ESP_LOGE(TAG, "error_type: %d, http_error_code: %d, description: %s", err->error_type, err->http_error_code,
+               err->description);
+      goto FAIL;
+    } else {
+      ESP_LOGI(TAG, "Gaus registered!");
+    }
+
+    //Persist register results in NVS
+    set_nvs_u32("poll_interval", poll_interval);
+    set_nvs_str("device_access", device_access);
+    set_nvs_str("device_secret", device_secret);
   }
 
-  //Fixme: Should load access/secret from storage.
   // GAUS LIBRARY STEP 3: Authenticate device
   // We need to collect a "session" to use for all future communications with Gaus system.
   err = gaus_authenticate(device_access, device_secret, &session);
@@ -126,10 +146,24 @@ void gaus_communication_task(void *taskData) {
       goto FAIL;
     } else {
       ESP_LOGI(TAG, "Gaus check for update successful!");
+      if (updateCount > 0) {
+        ESP_LOGI(TAG, "Found %d updates!", updateCount);
+        for (int i = 0; i < updateCount; i++) {
+          ESP_LOGI(TAG, "Updates: %d has updateId: %s!", updateCount, updates[i].update_id);
+        }
+        //Blink fast for 5 sec to show we're "updating"
+        for (int i = 5 * 4; i >= 0; i--) {
+          gpio_set_level(BLINK_GPIO, i % 2);
+          vTaskDelay(1000 / 4 / portTICK_PERIOD_MS);
+        }
+      } else {
+        ESP_LOGI(TAG, "No Updates: %d!", updateCount);
+      }
     }
 
-    for (int i = 120; i >= 0; i--) {
-      ESP_LOGI(TAG, "Sleeping for %d seconds...\n", i);
+    for (int i = 60; i >= 0; i--) {
+      ESP_LOGI(TAG, "Sleeping for %d seconds...", i);
+      gpio_set_level(BLINK_GPIO, i % 2);
       vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
   }
@@ -151,8 +185,16 @@ void gaus_communication_task(void *taskData) {
 }
 
 void app_main() {
+  uint32_t reset_count = 0;
   //Setup wifi
   ESP_ERROR_CHECK(nvs_flash_init());
+
+  get_nvs_u32("reset_count", &reset_count);
+  ESP_LOGI(TAG, "Reset count is now %d!", reset_count);
+
+  reset_count++;
+  set_nvs_u32("reset_count", reset_count);
+
   initialise_wifi();
   if (!wait_on_wifi()) {
     ESP_LOGE(TAG, "Failed to connect to wifi!");
