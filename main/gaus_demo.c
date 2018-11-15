@@ -30,6 +30,7 @@
 #include "gaus_helpers.h"
 #include "nvs.h"
 #include "driver/gpio.h"
+#include "ota.h"
 
 //Tag for logging
 static const char *TAG = "gaus-demo";
@@ -168,10 +169,14 @@ void gaus_communication_task(void *taskData) {
         for (int i = 0; i < updateCount; i++) {
           ESP_LOGI(TAG, "Updates: %d has updateId: %s!", updateCount, updates[i].update_id);
         }
-        //Blink fast for 5 sec to show we're "updating"
-        for (int i = 5 * 4; i >= 0; i--) {
-          gpio_set_level(BLINK_GPIO, i % 2);
-          vTaskDelay(1000 / 4 / portTICK_PERIOD_MS);
+
+        //On this system we can only handle 1 update at a time due to system restart
+        //So just take the first one, subsequent will be handled on restart.
+        ESP_LOGW(TAG, "Beginning update with url %s!", updates[0].download_url);
+        esp_err_t upgrade_error = do_firmware_upgrade(updates[0].download_url);
+        if (upgrade_error != ESP_OK) {
+          ESP_LOGE(TAG, "Update failed... restarting!");
+          goto FAIL;
         }
       } else {
         ESP_LOGI(TAG, "No Updates: %d!", updateCount);
