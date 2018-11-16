@@ -14,18 +14,11 @@
 //WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
 //COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 //OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-#ifndef GAUS_GAUS_HELPERS_H
-#define GAUS_GAUS_HELPERS_H
+#ifndef ESP32_FREERTOS_DEMO_GAUS_REPORT_H
+#define ESP32_FREERTOS_DEMO_GAUS_REPORT_H
 
-#include "gaus/gaus_client.h"
+#include <gaus/gaus_client_types.h>
 
-//Deep free updates
-void freeUpdate(gaus_update_t update);
-
-void freeUpdates(unsigned int updateCount, gaus_update_t **updates);
-
-void freeReport(gaus_report_t report);
-
-void freeReports(unsigned int reportCount, gaus_report_t *reports);
+void send_update_status_report(gaus_session_t *session, char *phase, char *status, char *logLine, char *updateId);
 
 #endif

@@ -31,6 +31,8 @@
 #include "nvs.h"
 #include "driver/gpio.h"
 #include "ota.h"
+#include "gaus_report.h"
+#include "sntp.h"
 
 //Tag for logging
 static const char *TAG = "gaus-demo";
@@ -108,7 +110,6 @@ void gaus_communication_task(void *taskData) {
   } else {
     ESP_LOGI(TAG, "Gaus library initialized!");
   }
-
   //Retrieve device access, device secret, poll interval from NonVolatileStorage (NVS)
   esp_err_t pi_error = get_nvs_u32("poll_interval", &poll_interval);
   esp_err_t da_error = get_nvs_str("device_access", &device_access);
@@ -173,10 +174,18 @@ void gaus_communication_task(void *taskData) {
         //On this system we can only handle 1 update at a time due to system restart
         //So just take the first one, subsequent will be handled on restart.
         ESP_LOGW(TAG, "Beginning update with url %s!", updates[0].download_url);
+        send_update_status_report(&session, "download", "starting", "Starting download", updates[0].update_id);
         esp_err_t upgrade_error = do_firmware_upgrade(updates[0].download_url);
         if (upgrade_error != ESP_OK) {
           ESP_LOGE(TAG, "Update failed... restarting!");
+          send_update_status_report(&session, "install", "failed", "Downloading and installing update failed",
+                                    updates[0].update_id);
           goto FAIL;
+        } else {
+          send_update_status_report(&session, "install", "success", "Installed new firmware version.",
+                                    updates[0].update_id);
+          ESP_LOGW(TAG, "New firmware version installed.  Restarting device.");
+          goto INSTALL_SUCCESS;
         }
       } else {
         ESP_LOGI(TAG, "No Updates: %d!", updateCount);
@@ -190,6 +199,7 @@ void gaus_communication_task(void *taskData) {
     }
   }
 
+  INSTALL_SUCCESS:
   FAIL:
   freeUpdates(updateCount, &updates);
   free(filters[0].filter_name);
@@ -220,6 +230,11 @@ void app_main() {
   initialise_wifi();
   if (!wait_on_wifi()) {
     ESP_LOGE(TAG, "Failed to connect to wifi!");
+  }
+
+  esp_err_t err = obtain_time();
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Failed to initialize time!");
   }
 
   //Spin up a new task to handle Gaus communications

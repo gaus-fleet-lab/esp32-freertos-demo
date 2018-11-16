@@ -15,6 +15,10 @@
 //COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 //OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "gaus_helpers.h"
+#include <esp_log.h>
+#include <stdlib.h>
+
+#define TAG "gaus-helpers"
 
 void freeUpdate(gaus_update_t update) {
   for (int i = 0; i < update.metadata_count; i++) {
@@ -37,4 +41,41 @@ void freeUpdates(unsigned int updateCount, gaus_update_t **updates) {
     freeUpdate((*updates)[i]);
   }
   free(*updates);
+}
+
+void freeReport(gaus_report_t report) {
+  switch (report.report_type) {
+    case GAUS_REPORT_UPDATE:
+      for (int i = 0; i < report.report.update_status.v_string_count; i++) {
+        free(report.report.update_status.v_strings[i].name);
+        free(report.report.update_status.v_strings[i].value);
+      }
+      free(report.report.update_status.type);
+      free(report.report.update_status.ts);
+      break;
+    case GAUS_REPORT_GENERIC:
+      for (int i = 0; i < report.report.generic.v_int_count; i++) {
+        free(report.report.generic.v_ints[i].name);
+      }
+      for (int i = 0; i < report.report.generic.v_float_count; i++) {
+        free(report.report.generic.v_floats[i].name);
+      }
+      for (int i = 0; i < report.report.generic.v_string_count; i++) {
+        free(report.report.generic.v_strings[i].name);
+        free(report.report.generic.v_strings[i].value);
+      }
+      free(report.report.generic.type);
+      free(report.report.generic.ts);
+      break;
+    default:
+
+      break;
+  }
+}
+
+
+void freeReports(unsigned int reportCount, gaus_report_t *reports) {
+  for (int i = 0; i < reportCount; i++) {
+    freeReport(reports[i]);
+  }
 }

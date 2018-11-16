@@ -52,8 +52,7 @@ esp_err_t do_firmware_upgrade(char *url) {
   };
   esp_err_t ret = esp_https_ota(&config);
   if (ret == ESP_OK) {
-    ESP_LOGW(TAG, "Updated firmware from url: %s, restarting device!", url);
-    esp_restart();
+    ESP_LOGW(TAG, "Updated firmware from url: %s, you should restart device!", url);
   } else {
     ESP_LOGE(TAG, "An error (%d) occurred attempting to upgrade with url: %s", ret, url);
     return ESP_FAIL;
