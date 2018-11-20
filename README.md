@@ -22,9 +22,14 @@ In order to build you'll need the esp32 tools as described here: [Esp32 Getting 
 Once you have all of the tools installed you'll need to:
 - Install `automake`
 - Install `libtool`
-- In jansson directory run:
-  - `autoreconf --install`
-  - `./configure --host=xtensa-esp32`
+- Save copy of ca-cert for your guas instance to `main/ca_cert.pem`
+- From project root directory run `make menuconfig` and set correct settings in "Gaus Demo Configuration".
+  - WiFi SSID
+  - WiFi Password
+  - Gaus server url
+  - Gaus Product Access
+  - Gaus Product Secret
+  - Gaus Device Id
 - From project root directory run:
   - `make`
   - `make flash` (To flash)
