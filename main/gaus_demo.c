@@ -33,6 +33,7 @@
 #include "ota.h"
 #include "gaus_report.h"
 #include "sntp.h"
+#include "display.h"
 
 //Tag for logging
 static const char *TAG = "gaus-demo";
@@ -226,6 +227,8 @@ void app_main() {
 
   reset_count++;
   set_nvs_u32("reset_count", reset_count);
+
+  initialize_display();
 
   initialise_wifi();
   if (!wait_on_wifi()) {
