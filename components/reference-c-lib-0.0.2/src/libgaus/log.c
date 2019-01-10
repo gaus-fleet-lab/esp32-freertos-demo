@@ -14,9 +14,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
+
 #ifndef GAUS_USE_RAWLOG
-  #include <syslog.h>
+
+#include <syslog.h>
+
 #endif
+
 #include <time.h>
 
 #define LOG_MAX_LEN 1024 /* Default maximum length of syslog messages */
@@ -33,6 +37,7 @@
 
 static int verbosity_level = VERBOSITY;
 static int log_to_stdout = 1;
+
 #ifndef GAUS_USE_RAWLOG
 static int syslog_enabled = SYSLOG_ENABLED;
 #endif
@@ -57,6 +62,7 @@ static void log_raw(int level, const char *msg) {
                                          LOG_WARNING, LOG_ERR};
   static const int systemd_level_map[] = {7, 6, 5, 4, 3};
 #endif
+
   char buf[64];
   int rawmode = (level & L_RAW);
   level &= 0xff; /* clear flags */
@@ -88,7 +94,6 @@ static void log_raw(int level, const char *msg) {
     syslog(syslog_level_map[level], "%s", msg);
   }
 #endif
-
 }
 
 void logging(int level, const char *fmt, ...) {
