@@ -17,14 +17,8 @@
 
 #include "curl_wrapper.h"
 #include "gaus.h"
+#include "gaus/gaus_client.h"
 
-#ifndef VERSION
-#define VERSION "v0.0.0"
-#endif
-
-//Fixme: We should check certificates:
-// Do not check certificates yet
-#define GAUS_NO_CA_CHECK
 
 typedef struct FileResponse {
   int fd;
@@ -176,6 +170,7 @@ static int request_post(const char *url, const char *auth_token, const char *pay
   struct curl_slist *headers = NULL;
   long code;
   char *auth_header = NULL;
+  char *user_agent_header = NULL;
 
   curl = gaus_curl_easy_init();
   if (!curl) {
@@ -194,8 +189,18 @@ static int request_post(const char *url, const char *auth_token, const char *pay
     headers = curl_slist_append(headers, auth_header);
   }
 
-  headers =
-      curl_slist_append(headers, "User-Agent: gaus-device-client-c/" VERSION);
+  gaus_version_t version = gaus_client_library_version();
+  size_t required_user_agent_len =
+      snprintf(NULL, 0, "User-Agent: gaus-device-client-c/v%d.%d.%d", version.major, version.minor, version.patch) + 1;
+  user_agent_header = malloc(required_user_agent_len);
+  size_t user_agent_len = snprintf(user_agent_header, required_user_agent_len,
+                                   "User-Agent: gaus-device-client-c/v%d.%d.%d", version.major, version.minor,
+                                   version.patch);
+  if (user_agent_len >= required_user_agent_len) {
+    logging(L_ERROR, "request_get error: User-Agent header too large");
+    goto error;
+  }
+  headers = curl_slist_append(headers, user_agent_header);
   headers = curl_slist_append(headers, "Content-Type: application/json");
 
   if (gaus_global_state.proxy) {
@@ -207,13 +212,14 @@ static int request_post(const char *url, const char *auth_token, const char *pay
   gaus_curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, strlen(payload));
   gaus_curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
-  gaus_curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, response_writer);
-  gaus_curl_easy_setopt(curl, CURLOPT_WRITEDATA, response);
-
 #ifdef GAUS_NO_CA_CHECK
   logging(L_DEBUG, "skipping verify peer certificate");
   curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
 #endif
+
+  gaus_curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, response_writer);
+  gaus_curl_easy_setopt(curl, CURLOPT_WRITEDATA, response);
+
   logging(L_DEBUG, "POST %s", url);
   status = gaus_curl_easy_perform(curl);
   if (status != 0) {
@@ -233,6 +239,7 @@ static int request_post(const char *url, const char *auth_token, const char *pay
   }
 
   free(auth_header);
+  free(user_agent_header);
   gaus_curl_easy_cleanup(curl);
   curl_slist_free_all(headers);
 
@@ -240,6 +247,7 @@ static int request_post(const char *url, const char *auth_token, const char *pay
 
   error:
   free(auth_header);
+  free(user_agent_header);
   if (curl) {
     gaus_curl_easy_cleanup(curl);
   }
@@ -255,6 +263,7 @@ static int request_get(const char *url, const char *auth_token,
   CURLcode status;
   struct curl_slist *headers = NULL;
   char *auth_header = NULL;
+  char *user_agent_header = NULL;
 
   curl = gaus_curl_easy_init();
   if (!curl) {
@@ -280,8 +289,19 @@ static int request_get(const char *url, const char *auth_token,
     }
     headers = curl_slist_append(headers, auth_header);
   }
-  headers =
-      curl_slist_append(headers, "User-Agent: gaus-device-client-c/" VERSION);
+
+  gaus_version_t version = gaus_client_library_version();
+  size_t required_user_agent_len =
+      snprintf(NULL, 0, "User-Agent: gaus-device-client-c/v%d.%d.%d", version.major, version.minor, version.patch) + 1;
+  user_agent_header = malloc(required_user_agent_len);
+  size_t user_agent_len = snprintf(user_agent_header, required_user_agent_len,
+                                   "User-Agent: gaus-device-client-c/v%d.%d.%d", version.major, version.minor,
+                                   version.patch);
+  if (user_agent_len >= required_user_agent_len) {
+    logging(L_ERROR, "request_get error: User-Agent header too large");
+    goto error;
+  }
+  headers = curl_slist_append(headers, user_agent_header);
   gaus_curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
 
   if (gaus_global_state.proxy) {
@@ -305,6 +325,7 @@ static int request_get(const char *url, const char *auth_token,
   }
 
   free(auth_header);
+  free(user_agent_header);
   gaus_curl_easy_cleanup(curl);
   curl_slist_free_all(headers);
 
@@ -312,6 +333,7 @@ static int request_get(const char *url, const char *auth_token,
 
   error:
   free(auth_header);
+  free(user_agent_header);
   if (curl) {
     gaus_curl_easy_cleanup(curl);
   }

@@ -5,5 +5,8 @@
 
 PROJECT_NAME := gaus-demo
 
+#Disable certificate check.  DO NOT USE IN PRODUCTION!
+CFLAGS=-DGAUS_NO_CA_CHECK
+
 include $(IDF_PATH)/make/project.mk
 
