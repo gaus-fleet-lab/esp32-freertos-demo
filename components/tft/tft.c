@@ -18,7 +18,7 @@
 #include "rom/tjpgd.h"
 #include "esp_heap_caps.h"
 #include "tftspi.h"
-
+#include "esp_log.h"
 
 #define DEG_TO_RAD 0.01745329252
 #define RAD_TO_DEG 57.295779513
@@ -31,6 +31,8 @@
 #if !defined(min)
 #define min(A, B) ( (A) < (B) ? (A):(B))
 #endif
+
+#define TAG "TFT"
 
 // Embedded fonts
 extern uint8_t tft_SmallFont[];
@@ -1927,15 +1929,19 @@ void TFT_print(char *st, int x, int y) {
     fh = (3 * (2 * cfont.y_size + 1)) + (2 * cfont.x_size);  // 7-seg character height
   }
 
-  if (x == RIGHT) { x = dispWin.x2 - tmpw + dispWin.x1; }
+  if (x == RIGHT) { x = dispWin.x2 - tmpw; }
   else if (x == CENTER) x = (((dispWin.x2 - dispWin.x1 + 1) - tmpw) / 2) + dispWin.x1;
 
-  if (y == BOTTOM) { y = dispWin.y2 - fh + dispWin.y1; }
+  if (y == BOTTOM) { y = dispWin.y2 - fh; }
   else if (y == CENTER) y = (((dispWin.y2 - dispWin.y1 + 1) - (fh / 2)) / 2) + dispWin.y1;
 
   if (x < dispWin.x1) x = dispWin.x1;
   if (y < dispWin.y1) y = dispWin.y1;
-  if ((x > dispWin.x2) || (y > dispWin.y2)) return;
+  if ((x > dispWin.x2) || (y > dispWin.y2)) {
+    ESP_LOGW(TAG, "Skipped attempted print off display, target: (%d, %d), limit: (%d,%d)", x, y, dispWin.x2,
+             dispWin.y2);
+    return;
+  }
 
   TFT_X = x;
   TFT_Y = y;
