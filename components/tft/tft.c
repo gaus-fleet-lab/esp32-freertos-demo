@@ -85,10 +85,10 @@ uint32_t tp_calx = 7472920;
 uint32_t tp_caly = 122224794;
 
 dispWin_t dispWin = {
-  .x1 = 0,
-  .y1 = 0,
-  .x2 = DEFAULT_TFT_DISPLAY_WIDTH,
-  .y2 = DEFAULT_TFT_DISPLAY_HEIGHT,
+    .x1 = DEFAULT_TFT_DISPLAY_X_OFFSET,
+    .y1 = DEFAULT_TFT_DISPLAY_Y_OFFSET,
+    .x2 = DEFAULT_TFT_DISPLAY_WIDTH,
+    .y2 = DEFAULT_TFT_DISPLAY_HEIGHT,
 };
 
 Font cfont = {
@@ -2062,10 +2062,10 @@ void TFT_setRotation(uint8_t rot) {
         _tft_setRotation(rot);
 	}
 
-	dispWin.x1 = 0;
-	dispWin.y1 = 0;
-	dispWin.x2 = _width-1;
-	dispWin.y2 = _height-1;
+  dispWin.x1 = DEFAULT_TFT_DISPLAY_X_OFFSET;
+  dispWin.y1 = DEFAULT_TFT_DISPLAY_Y_OFFSET;
+  dispWin.x2 = _width - 1;
+  dispWin.y2 = _height - 1;
 
 	TFT_fillScreen(_bg);
 }
@@ -2173,8 +2173,8 @@ void TFT_resetclipwin()
 {
 	dispWin.x2 = _width-1;
 	dispWin.y2 = _height-1;
-	dispWin.x1 = 0;
-	dispWin.y1 = 0;
+	dispWin.x1 = DEFAULT_TFT_DISPLAY_X_OFFSET;
+	dispWin.y1 = DEFAULT_TFT_DISPLAY_Y_OFFSET;
 }
 
 //==========================================================================

@@ -130,16 +130,17 @@
 
 // ** Set the correct configuration for Adafruit TFT Feather Mini
 // ---------------------------------------------------------
-#define DEFAULT_DISP_TYPE   DISP_TYPE_ST7735R
-#define DEFAULT_TFT_DISPLAY_WIDTH   80
-#define DEFAULT_TFT_DISPLAY_HEIGHT  160
+#define DEFAULT_DISP_TYPE   DISP_TYPE_ST7735B
+#define DEFAULT_TFT_DISPLAY_X_OFFSET 0
+#define DEFAULT_TFT_DISPLAY_Y_OFFSET 24
+#define DEFAULT_TFT_DISPLAY_WIDTH   160 + DEFAULT_TFT_DISPLAY_X_OFFSET
+#define DEFAULT_TFT_DISPLAY_HEIGHT  80 + DEFAULT_TFT_DISPLAY_Y_OFFSET
 #define DISP_COLOR_BITS_24          0x66
 #define DEFAULT_GAMMA_CURVE         0
 #define DEFAULT_SPI_CLOCK           26000000
 #define TFT_INVERT_ROTATION         0
 #define TFT_INVERT_ROTATION1        1
 #define TFT_INVERT_ROTATION2        0   // Adapte M5Stack TFT
-//#define TFT_RGB_BGR                 0x08
 #define TFT_RGB_BGR                 0x00
 
 #define USE_TOUCH                   TOUCH_TYPE_NONE
