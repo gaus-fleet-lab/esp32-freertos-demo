@@ -277,7 +277,10 @@ void TFT_drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, color_t color)
 //--------------------------------------------------------------------------------
 static void _fillRect(int16_t x, int16_t y, int16_t w, int16_t h, color_t color) {
   // clipping
-  if ((x >= dispWin.x2) || (y > dispWin.y2)) return;
+  if ((x >= dispWin.x2) || (y > dispWin.y2)) {
+    ESP_LOGW(TAG, "Attempting to fill rect off screen target: (%d,%d), screen: (%d,%d)", x, y, dispWin.x2, dispWin.y2);
+    return;
+  }
 
   if (x < dispWin.x1) {
     w -= (dispWin.x1 - x);
