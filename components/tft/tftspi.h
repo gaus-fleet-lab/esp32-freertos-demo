@@ -42,6 +42,8 @@
 // ** Set the correct configuration for ESP32-WROVER-KIT v3
 // --------------------------------------------------------
 #define DEFAULT_DISP_TYPE           DISP_TYPE_ST7789V
+#define DEFAULT_TFT_DISPLAY_X_OFFSET 0
+#define DEFAULT_TFT_DISPLAY_Y_OFFSET 0
 #define DEFAULT_TFT_DISPLAY_WIDTH   240
 #define DEFAULT_TFT_DISPLAY_HEIGHT  320
 #define DISP_COLOR_BITS_24          0x66
@@ -71,6 +73,8 @@
 // ** Set the correct configuration for Adafruit TFT Feather
 // ---------------------------------------------------------
 #define DEFAULT_DISP_TYPE   DISP_TYPE_ILI9341
+#define DEFAULT_TFT_DISPLAY_X_OFFSET 0
+#define DEFAULT_TFT_DISPLAY_Y_OFFSET 0
 #define DEFAULT_TFT_DISPLAY_WIDTH   240
 #define DEFAULT_TFT_DISPLAY_HEIGHT  320
 #define DISP_COLOR_BITS_24          0x66
@@ -100,6 +104,8 @@
 // ** Set the correct configuration for M5Stack TFT
 // ---------------------------------------------------------
 #define DEFAULT_DISP_TYPE   DISP_TYPE_ILI9341
+#define DEFAULT_TFT_DISPLAY_X_OFFSET 0
+#define DEFAULT_TFT_DISPLAY_Y_OFFSET 0
 #define DEFAULT_TFT_DISPLAY_WIDTH   320
 #define DEFAULT_TFT_DISPLAY_HEIGHT  240
 #define DISP_COLOR_BITS_24          0x66
@@ -212,6 +218,8 @@
 // #######################################################################
 // Default display width (smaller dimension) and height (larger dimension)
 // #######################################################################
+#define DEFAULT_TFT_DISPLAY_X_OFFSET 0
+#define DEFAULT_TFT_DISPLAY_Y_OFFSET 0
 #define DEFAULT_TFT_DISPLAY_WIDTH  240
 #define DEFAULT_TFT_DISPLAY_HEIGHT 320
 // #######################################################################
