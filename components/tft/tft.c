@@ -124,6 +124,7 @@ static int TFT_OFFSET = 0;
 static propFont fontChar;
 static float _arcAngleMax = DEFAULT_ARC_ANGLE_MAX;
 
+static void _getStringCords(char *st, int *x, int *y);
 
 // =========================================================================
 // ** All drawings are clipped to 'dispWin' **
@@ -1774,7 +1775,9 @@ int TFT_getStringWidth(char *str) {
 void TFT_clearStringRect(int x, int y, char *str) {
   int w = TFT_getStringWidth(str);
   int h = TFT_getfontheight();
-  TFT_fillRect(x + dispWin.x1, y + dispWin.y1, w, h, _bg);
+  _getStringCords(str, &x, &y);
+  //fillRect re-applies offsets... so subtract them.
+  TFT_fillRect(x - dispWin.x1, y - dispWin.y1, w, h, _bg);
 }
 
 //==============================================================================
@@ -1900,26 +1903,20 @@ static void _draw7seg(int16_t x, int16_t y, int8_t num, int16_t w, int16_t l, co
 }
 //==============================================================================
 
-//======================================
-void TFT_print(char *st, int x, int y) {
-  int stl, i, tmpw, tmph, fh;
-  uint8_t ch;
 
-  if (cfont.bitmap == 0) return; // wrong font selected
+//Paramaters in/out x,y
+//Sets x/y to the position to write the text, handles special coordinate constants.
 
-  // ** Rotated strings cannot be aligned
-  if ((font_rotate != 0) && ((x <= CENTER) || (y <= CENTER))) return;
+static void _getStringCords(char *st, int *x, int *y) {
+  int tmpw, fh;
 
-  if ((x < LASTX) || (font_rotate == 0)) TFT_OFFSET = 0;
+  if (((*x) < LASTX) || (font_rotate == 0)) TFT_OFFSET = 0;
 
-  if ((x >= LASTX) && (x < LASTY)) { x = TFT_X + (x - LASTX); }
-  else if (x > CENTER) x += dispWin.x1;
+  if (((*x) >= LASTX) && ((*x) < LASTY)) { (*x) = TFT_X + ((*x) - LASTX); }
+  else if ((*x) > CENTER) (*x) += dispWin.x1;
 
-  if (y >= LASTY) { y = TFT_Y + (y - LASTY); }
-  else if (y > CENTER) y += dispWin.y1;
-
-  // ** Get number of characters in string to print
-  stl = strlen(st);
+  if ((*y) >= LASTY) { (*y) = TFT_Y + ((*y) - LASTY); }
+  else if ((*y) > CENTER) (*y) += dispWin.y1;
 
   // ** Calculate CENTER, RIGHT or BOTTOM position
   tmpw = TFT_getStringWidth(st);  // string width in pixels
@@ -1929,14 +1926,31 @@ void TFT_print(char *st, int x, int y) {
     fh = (3 * (2 * cfont.y_size + 1)) + (2 * cfont.x_size);  // 7-seg character height
   }
 
-  if (x == RIGHT) { x = dispWin.x2 - tmpw; }
-  else if (x == CENTER) x = (((dispWin.x2 - dispWin.x1 + 1) - tmpw) / 2) + dispWin.x1;
+  if ((*x) == RIGHT) { (*x) = dispWin.x2 - tmpw; }
+  else if ((*x) == CENTER) (*x) = (((dispWin.x2 - dispWin.x1 + 1) - tmpw) / 2) + dispWin.x1;
 
-  if (y == BOTTOM) { y = dispWin.y2 - fh; }
-  else if (y == CENTER) y = (((dispWin.y2 - dispWin.y1 + 1) - (fh / 2)) / 2) + dispWin.y1;
+  if ((*y) == BOTTOM) { (*y) = dispWin.y2 - fh; }
+  else if ((*y) == CENTER) (*y) = (((dispWin.y2 - dispWin.y1 + 1) - (fh / 2)) / 2) + dispWin.y1;
 
-  if (x < dispWin.x1) x = dispWin.x1;
-  if (y < dispWin.y1) y = dispWin.y1;
+  if ((*x) < dispWin.x1) (*x) = dispWin.x1;
+  if ((*y) < dispWin.y1) (*y) = dispWin.y1;
+}
+
+//======================================
+void TFT_print(char *st, int x, int y) {
+  int stl, i, tmpw, tmph;
+  uint8_t ch;
+
+  if (cfont.bitmap == 0) return; // wrong font selected
+
+  // ** Rotated strings cannot be aligned
+  if ((font_rotate != 0) && ((x <= CENTER) || (y <= CENTER))) return;
+
+  _getStringCords(st, &x, &y);
+
+  // ** Get number of characters in string to print
+  stl = strlen(st);
+
   if ((x > dispWin.x2) || (y > dispWin.y2)) {
     ESP_LOGW(TAG, "Skipped attempted print off display, target: (%d, %d), limit: (%d,%d)", x, y, dispWin.x2,
              dispWin.y2);
