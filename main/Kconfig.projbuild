@@ -57,6 +57,14 @@ config GAUS_DEVICE_ID
 
         MUST be set in order for the demo to work.
 
+config GAUS_DEVICE_LOCATION
+    string "Gaus Device Location"
+    default "unknown"
+    help
+        The location for this device.  This is used to allow updating a group of devices by location.
+
+        OPTIONAL: If unused can set to empty string or "unknown".
+
 config EXAMPLE_DISPLAY_TYPE
     int
     default 0 if EXAMPLE_DISPLAY_TYPE0

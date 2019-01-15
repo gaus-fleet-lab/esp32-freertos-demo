@@ -58,6 +58,7 @@ static char *version_string(void);
 //FIXME: Use mac address or something
 //Should be unique to this device (MAC or similar)
 #define GAUS_DEVICE_ID CONFIG_GAUS_DEVICE_ID
+#define GAUS_DEVICE_LOCATION CONFIG_GAUS_DEVICE_LOCATION
 
 /*
  * End of configuration
@@ -70,11 +71,15 @@ void gaus_communication_task(void *taskData) {
   uint32_t poll_interval;
   gaus_session_t session;
 
-  unsigned int filterCount = 1;
-  gaus_header_filter_t filters[1] = {
+  unsigned int filterCount = 2;
+  gaus_header_filter_t filters[2] = {
       {
           strdup("firmware-version"),
           version_string()
+      },
+      {
+          strdup("location"),
+          strdup(GAUS_DEVICE_LOCATION)
       }
   };
   unsigned int updateCount = 0;
@@ -166,6 +171,7 @@ void gaus_communication_task(void *taskData) {
 
         //On this system we can only handle 1 update at a time due to system restart
         //So just take the first one, subsequent will be handled on restart.
+        ESP_LOGI(TAG, "Beginning update!");
         ESP_LOGW(TAG, "Beginning update with url %s!", updates[0].download_url);
         send_update_status_report(&session, "download", "starting", "Starting download", updates[0].update_id);
         esp_err_t upgrade_error = do_firmware_upgrade(updates[0].download_url);
@@ -198,6 +204,8 @@ void gaus_communication_task(void *taskData) {
   freeUpdates(updateCount, &updates);
   free(filters[0].filter_name);
   free(filters[0].filter_value);
+  free(filters[1].filter_name);
+  free(filters[1].filter_value);
   if (err) {
     free(err->description);
   }
@@ -227,6 +235,8 @@ void app_main() {
 
   display_text_small(0, BIG_FONT_HEIGHT + LINE_SPACING, TFT_YELLOW, "FW Version: v%d.%d.%d\r", FIRMWARE_VERSION_MAJOR,
                      FIRMWARE_VERSION_MINOR, FIRMWARE_VERSION_PATCH);
+  display_text_small(0, BIG_FONT_HEIGHT + SMALL_FONT_HEIGHT + LINE_SPACING * 2, TFT_YELLOW, "Location: %s\r",
+                     GAUS_DEVICE_LOCATION);
 
   display_text_small(0, BOTTOM, TFT_GREEN, "Init wifi...\r");
   initialise_wifi();
