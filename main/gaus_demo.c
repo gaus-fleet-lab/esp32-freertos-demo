@@ -43,7 +43,6 @@ static const char *TAG = "gaus-demo";
 #define FIRMWARE_VERSION_MINOR 0
 #define FIRMWARE_VERSION_PATCH 0
 
-
 /* The examples use simple configuration that you can set via
    'make menuconfig'.
    If you'd rather not, just change the below entries to strings with
@@ -104,6 +103,7 @@ void gaus_communication_task(void *taskData) {
 
   // GAUS LIBRARY STEP 1: Initalize library
   // Only required if using library
+  display_text_small(0, BOTTOM, TFT_GREEN, "Init library...\r");
   gaus_error_t *err = gaus_global_init(GAUS_SERVER_URL, NULL);
   if (err) {
     ESP_LOGE(TAG, "An error occurred initializing!");
@@ -124,6 +124,7 @@ void gaus_communication_task(void *taskData) {
   } else {
     // GAUS LIBRARY STEP 2: Register device
     // Only required if device is unregistered.  The results of this should be persisted to the device.
+    display_text_small(0, BOTTOM, TFT_GREEN, "Register device...\r");
     err = gaus_register(GAUS_PRODUCT_ACCESS, GAUS_PRODUCT_SECRET, GAUS_DEVICE_ID,
                         &device_access, &device_secret, &poll_interval);
     if (err) {
@@ -143,6 +144,7 @@ void gaus_communication_task(void *taskData) {
 
   // GAUS LIBRARY STEP 3: Authenticate device
   // We need to collect a "session" to use for all future communications with Gaus system.
+  display_text_small(0, BOTTOM, TFT_GREEN, "Authenticate device...\r");
   err = gaus_authenticate(device_access, device_secret, &session);
   if (err) {
     ESP_LOGE(TAG, "An error occurred authenticating!");
@@ -158,6 +160,7 @@ void gaus_communication_task(void *taskData) {
     // GAUS LIBRARY STEP 4: Check for updates
     // Use session to check for updates.  If session has expired, we should aquire a new session
     // by calling gaus_authenticate() again.
+    display_text_small(0, BOTTOM, TFT_GREEN, "Check for updates...\r");
     err = gaus_check_for_updates(&session, filterCount, filters, &updateCount, &updates);
     if (err) {
       ESP_LOGE(TAG, "An error occurred checking for updates!");
@@ -167,6 +170,7 @@ void gaus_communication_task(void *taskData) {
     } else {
       ESP_LOGI(TAG, "Gaus check for update successful!");
       if (updateCount > 0) {
+        display_text_small(0, BOTTOM, TFT_GREEN, "Found %d Updates!\r", updateCount);
         ESP_LOGI(TAG, "Found %d updates!", updateCount);
         for (int i = 0; i < updateCount; i++) {
           ESP_LOGI(TAG, "Updates: %d has updateId: %s!", updateCount, updates[i].update_id);
@@ -189,6 +193,7 @@ void gaus_communication_task(void *taskData) {
           goto INSTALL_SUCCESS;
         }
       } else {
+        display_text_small(0, BOTTOM, TFT_GREEN, "No updates found!\r");
         ESP_LOGI(TAG, "No Updates: %d!", updateCount);
       }
     }
@@ -230,11 +235,13 @@ void app_main() {
 
   initialize_display();
 
+  display_text_small(0, BOTTOM, TFT_GREEN, "Init wifi...\r");
   initialise_wifi();
   if (!wait_on_wifi()) {
     ESP_LOGE(TAG, "Failed to connect to wifi!");
   }
 
+  display_text_small(0, BOTTOM, TFT_GREEN, "Sync time...\r");
   esp_err_t err = obtain_time();
   if (err != ESP_OK) {
     ESP_LOGE(TAG, "Failed to initialize time!");

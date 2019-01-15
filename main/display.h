@@ -26,7 +26,17 @@
 #ifndef GAUS_DISPLAY_H
 #define GAUS_DISPLAY_H
 
+#include "tft.h"
+
+#define SMALL_FONT_HEIGHT 12
+#define BIG_FONT_HEIGHT 18
+#define LINE_SPACING 2
+
 void initialize_display(void);
+
+void display_text_small(int x, int y, color_t color, char *fmt, ...);
+
+void display_text_big(int x, int y, color_t color, char *fmt, ...);
 
 #endif
 

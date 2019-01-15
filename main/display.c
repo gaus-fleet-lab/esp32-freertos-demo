@@ -21,13 +21,14 @@
 //Display headers:
 #include "tft.h"
 #include "freertos/task.h"
-
+#include "display.h"
 
 //Tag for logging
 static const char *TAG = "display";
 
 // Define which spi bus to use TFT_VSPI_HOST or TFT_HSPI_HOST
 #define SPI_BUS TFT_HSPI_HOST
+#define DISPLAY_MAX_LEN 21
 
 void initialize_display() {
   esp_err_t ret;
@@ -111,13 +112,40 @@ void initialize_display() {
   TFT_resetclipwin();
 
   TFT_fillScreen(TFT_BLACK);
+}
 
-  //Uncomment to test offsets by printing a pixel in each corner.
-//  TFT_drawPixel(0, 0, TFT_RED, 1);
-//  TFT_drawPixel(159, 0, TFT_GREEN, 1);
-//  TFT_drawPixel(0, 79, TFT_BLUE, 1);
-//  TFT_drawPixel(159, 79, TFT_YELLOW, 1);
+void clear_screen() {
+  TFT_fillScreen(TFT_BLACK);
+}
 
+void display_text_small(int x, int y, color_t color, char *fmt, ...) {
+  va_list ap;
+  char str[DISPLAY_MAX_LEN];
 
-  TFT_print("Gaus Demo", CENTER, CENTER);
+  va_start(ap, fmt);
+  vsnprintf(str, sizeof(str), fmt, ap);
+  va_end(ap);
+
+  ESP_LOGI(TAG, "Displaying small text %s", str);
+  _fg = color;
+  _bg = TFT_BLACK;
+  TFT_setFont(SMALL_FONT, NULL);
+  TFT_clearStringRect(x, y, str);
+  TFT_print(str, x, y);
+}
+
+void display_text_big(int x, int y, color_t color, char *fmt, ...) {
+  va_list ap;
+  char str[DISPLAY_MAX_LEN];
+
+  va_start(ap, fmt);
+  vsnprintf(str, sizeof(str), fmt, ap);
+  va_end(ap);
+
+  ESP_LOGI(TAG, "Displaying big text %s", str);
+  _fg = color;
+  _bg = TFT_BLACK;
+  TFT_setFont(DEJAVU18_FONT, NULL);
+  TFT_clearStringRect(x, y, str);
+  TFT_print(str, x, y);
 }
