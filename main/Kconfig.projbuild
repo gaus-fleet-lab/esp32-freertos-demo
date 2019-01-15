@@ -56,4 +56,38 @@ config GAUS_DEVICE_ID
         Can be set to something like a MAC address.
 
         MUST be set in order for the demo to work.
+
+config GAUS_DEVICE_LOCATION
+    string "Gaus Device Location"
+    default "unknown"
+    help
+        The location for this device.  This is used to allow updating a group of devices by location.
+
+        OPTIONAL: If unused can set to empty string or "unknown".
+
+config EXAMPLE_DISPLAY_TYPE
+    int
+    default 0 if EXAMPLE_DISPLAY_TYPE0
+    default 1 if EXAMPLE_DISPLAY_TYPE1
+    default 2 if EXAMPLE_DISPLAY_TYPE2
+    default 3 if EXAMPLE_DISPLAY_TYPE3
+    default 4 if EXAMPLE_DISPLAY_TYPE4
+
+    choice
+        prompt "Select predefined display configuration"
+        default EXAMPLE_DISPLAY_TYPE0
+        help
+            Select predefined display configuration
+
+        config EXAMPLE_DISPLAY_TYPE0
+            bool "None"
+        config EXAMPLE_DISPLAY_TYPE1
+            bool "ESP-WROVER-KIT Display"
+        config EXAMPLE_DISPLAY_TYPE2
+            bool "Adafruit TFT Feather display"
+        config EXAMPLE_DISPLAY_TYPE3
+            bool "M5Stack TFT display"
+        config EXAMPLE_DISPLAY_TYPE4
+            bool "Adafruit tft feather mini display"
+    endchoice
 endmenu

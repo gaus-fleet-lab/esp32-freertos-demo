@@ -33,6 +33,7 @@
 #include "ota.h"
 #include "gaus_report.h"
 #include "sntp.h"
+#include "display.h"
 
 //Tag for logging
 static const char *TAG = "gaus-demo";
@@ -41,7 +42,6 @@ static const char *TAG = "gaus-demo";
 #define FIRMWARE_VERSION_MAJOR 0
 #define FIRMWARE_VERSION_MINOR 0
 #define FIRMWARE_VERSION_PATCH 0
-
 
 /* The examples use simple configuration that you can set via
    'make menuconfig'.
@@ -52,22 +52,17 @@ static const char *TAG = "gaus-demo";
 #define GAUS_PRODUCT_ACCESS CONFIG_GAUS_PRODUCT_ACCESS
 #define GAUS_PRODUCT_SECRET CONFIG_GAUS_PRODUCT_SECRET
 
-//Blink out the firmware version:
-//Sec on/off per number
-#define BLINK_FIRMWARE_NUM 250
-#define BLINK_FIRMWARE_DOT 2000
-#define BLINK_FIRMWARE_START_END 3000 //before/after
-
-//Example: 1.2.3: with 0.5, 1, 2
-// 2-0.5-P1-0.5-0.5-P1-0.5-0.5-0.5-2
-static void blinkVersion(void);
-
 //Returns a strong pointer to a null terminated version string
 static char *version_string(void);
 
 //FIXME: Use mac address or something
 //Should be unique to this device (MAC or similar)
 #define GAUS_DEVICE_ID CONFIG_GAUS_DEVICE_ID
+#define GAUS_DEVICE_LOCATION CONFIG_GAUS_DEVICE_LOCATION
+
+#define ID_COLOR TFT_RED
+#define DETAILS_COLOR TFT_YELLOW
+#define STATUS_COLOR TFT_GREEN
 
 /*
  * End of configuration
@@ -80,11 +75,15 @@ void gaus_communication_task(void *taskData) {
   uint32_t poll_interval;
   gaus_session_t session;
 
-  unsigned int filterCount = 1;
-  gaus_header_filter_t filters[1] = {
+  unsigned int filterCount = 2;
+  gaus_header_filter_t filters[2] = {
       {
           strdup("firmware-version"),
           version_string()
+      },
+      {
+          strdup("location"),
+          strdup(GAUS_DEVICE_LOCATION)
       }
   };
   unsigned int updateCount = 0;
@@ -95,14 +94,13 @@ void gaus_communication_task(void *taskData) {
   /* Set the GPIO as a push/pull output */
   gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
 
-  blinkVersion();
-
   //Print Gaus library version
   gaus_version_t version = gaus_client_library_version();
   ESP_LOGI(TAG, "Gaus Client Library Version: v%d.%d.%d", version.major, version.minor, version.patch);
 
   // GAUS LIBRARY STEP 1: Initalize library
   // Only required if using library
+  display_text_small(0, BOTTOM, STATUS_COLOR, "Init library...\r");
   gaus_error_t *err = gaus_global_init(GAUS_SERVER_URL, NULL);
   if (err) {
     ESP_LOGE(TAG, "An error occurred initializing!");
@@ -123,6 +121,7 @@ void gaus_communication_task(void *taskData) {
   } else {
     // GAUS LIBRARY STEP 2: Register device
     // Only required if device is unregistered.  The results of this should be persisted to the device.
+    display_text_small(0, BOTTOM, STATUS_COLOR, "Register device...\r");
     err = gaus_register(GAUS_PRODUCT_ACCESS, GAUS_PRODUCT_SECRET, GAUS_DEVICE_ID,
                         &device_access, &device_secret, &poll_interval);
     if (err) {
@@ -142,6 +141,7 @@ void gaus_communication_task(void *taskData) {
 
   // GAUS LIBRARY STEP 3: Authenticate device
   // We need to collect a "session" to use for all future communications with Gaus system.
+  display_text_small(0, BOTTOM, STATUS_COLOR, "Authenticate device...\r");
   err = gaus_authenticate(device_access, device_secret, &session);
   if (err) {
     ESP_LOGE(TAG, "An error occurred authenticating!");
@@ -157,6 +157,7 @@ void gaus_communication_task(void *taskData) {
     // GAUS LIBRARY STEP 4: Check for updates
     // Use session to check for updates.  If session has expired, we should aquire a new session
     // by calling gaus_authenticate() again.
+    display_text_small(0, BOTTOM, STATUS_COLOR, "Check for updates...\r");
     err = gaus_check_for_updates(&session, filterCount, filters, &updateCount, &updates);
     if (err) {
       ESP_LOGE(TAG, "An error occurred checking for updates!");
@@ -166,6 +167,7 @@ void gaus_communication_task(void *taskData) {
     } else {
       ESP_LOGI(TAG, "Gaus check for update successful!");
       if (updateCount > 0) {
+        display_text_small(0, BOTTOM, STATUS_COLOR, "Found %d Updates!\r", updateCount);
         ESP_LOGI(TAG, "Found %d updates!", updateCount);
         for (int i = 0; i < updateCount; i++) {
           ESP_LOGI(TAG, "Updates: %d has updateId: %s!", updateCount, updates[i].update_id);
@@ -173,6 +175,7 @@ void gaus_communication_task(void *taskData) {
 
         //On this system we can only handle 1 update at a time due to system restart
         //So just take the first one, subsequent will be handled on restart.
+        ESP_LOGI(TAG, "Beginning update!");
         ESP_LOGW(TAG, "Beginning update with url %s!", updates[0].download_url);
         send_update_status_report(&session, "download", "starting", "Starting download", updates[0].update_id);
         esp_err_t upgrade_error = do_firmware_upgrade(updates[0].download_url);
@@ -188,6 +191,7 @@ void gaus_communication_task(void *taskData) {
           goto INSTALL_SUCCESS;
         }
       } else {
+        display_text_small(0, BOTTOM, STATUS_COLOR, "No updates found!\r");
         ESP_LOGI(TAG, "No Updates: %d!", updateCount);
       }
     }
@@ -204,6 +208,8 @@ void gaus_communication_task(void *taskData) {
   freeUpdates(updateCount, &updates);
   free(filters[0].filter_name);
   free(filters[0].filter_value);
+  free(filters[1].filter_name);
+  free(filters[1].filter_value);
   if (err) {
     free(err->description);
   }
@@ -227,11 +233,23 @@ void app_main() {
   reset_count++;
   set_nvs_u32("reset_count", reset_count);
 
+  initialize_display();
+
+  display_text_big(CENTER, 0, ID_COLOR, "%s\r", GAUS_DEVICE_ID);
+
+  display_text_small(0, BIG_FONT_HEIGHT + LINE_SPACING, DETAILS_COLOR, "FW Version: v%d.%d.%d\r",
+                     FIRMWARE_VERSION_MAJOR,
+                     FIRMWARE_VERSION_MINOR, FIRMWARE_VERSION_PATCH);
+  display_text_small(0, BIG_FONT_HEIGHT + SMALL_FONT_HEIGHT + LINE_SPACING * 2, DETAILS_COLOR, "Location: %s\r",
+                     GAUS_DEVICE_LOCATION);
+
+  display_text_small(0, BOTTOM, STATUS_COLOR, "Init wifi...\r");
   initialise_wifi();
   if (!wait_on_wifi()) {
     ESP_LOGE(TAG, "Failed to connect to wifi!");
   }
 
+  display_text_small(0, BOTTOM, STATUS_COLOR, "Sync time...\r");
   esp_err_t err = obtain_time();
   if (err != ESP_OK) {
     ESP_LOGE(TAG, "Failed to initialize time!");
@@ -249,37 +267,4 @@ static char *version_string(void) {
   version = malloc(len);
   snprintf(version, len, "%d.%d.%d", FIRMWARE_VERSION_MAJOR, FIRMWARE_VERSION_MINOR, FIRMWARE_VERSION_PATCH);
   return version;
-}
-
-static void blinkVersion(void) {
-  ESP_LOGI(TAG, "Blinking for fw-version %d.%d.%d", FIRMWARE_VERSION_MAJOR, FIRMWARE_VERSION_MINOR,
-           FIRMWARE_VERSION_PATCH);
-  //Start:
-  gpio_set_level(BLINK_GPIO, 1);
-  vTaskDelay(BLINK_FIRMWARE_START_END / portTICK_PERIOD_MS);
-  gpio_set_level(BLINK_GPIO, 0);
-  vTaskDelay(BLINK_FIRMWARE_START_END / portTICK_PERIOD_MS);
-  for (int i = 0; i <= FIRMWARE_VERSION_MAJOR * 2; i++) {
-    gpio_set_level(BLINK_GPIO, i % 2);
-    vTaskDelay(BLINK_FIRMWARE_NUM / portTICK_PERIOD_MS);
-  }
-  //Dot
-  gpio_set_level(BLINK_GPIO, 0);
-  vTaskDelay(BLINK_FIRMWARE_DOT / portTICK_PERIOD_MS);
-  for (int i = 0; i <= FIRMWARE_VERSION_MINOR * 2; i++) {
-    gpio_set_level(BLINK_GPIO, i % 2);
-    vTaskDelay(BLINK_FIRMWARE_NUM / portTICK_PERIOD_MS);
-  }
-  //Dot
-  gpio_set_level(BLINK_GPIO, 0);
-  vTaskDelay(BLINK_FIRMWARE_DOT / portTICK_PERIOD_MS);
-  for (int i = 0; i <= FIRMWARE_VERSION_PATCH * 2; i++) {
-    gpio_set_level(BLINK_GPIO, i % 2);
-    vTaskDelay(BLINK_FIRMWARE_NUM / portTICK_PERIOD_MS);
-  }
-  //End:
-  gpio_set_level(BLINK_GPIO, 0);
-  vTaskDelay(BLINK_FIRMWARE_START_END / portTICK_PERIOD_MS);
-  gpio_set_level(BLINK_GPIO, 1);
-  vTaskDelay(BLINK_FIRMWARE_START_END / portTICK_PERIOD_MS);
 }
