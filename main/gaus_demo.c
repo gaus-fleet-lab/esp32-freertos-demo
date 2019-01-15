@@ -223,6 +223,8 @@ void app_main() {
 
   initialize_display();
 
+  display_text_big(CENTER, 0, TFT_RED, "%s\r", GAUS_DEVICE_ID);
+
   display_text_small(0, BIG_FONT_HEIGHT + LINE_SPACING, TFT_YELLOW, "FW Version: v%d.%d.%d\r", FIRMWARE_VERSION_MAJOR,
                      FIRMWARE_VERSION_MINOR, FIRMWARE_VERSION_PATCH);
 
