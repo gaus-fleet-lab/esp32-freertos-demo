@@ -55,6 +55,12 @@ static const char *TAG = "gaus-demo";
 //Returns a strong pointer to a null terminated version string
 static char *version_string(void);
 
+//Returns a strong pointer to a null terminated id string
+static char *get_device_id(void);
+
+//Returns a strong pointer to a null terminated location string
+static char *get_device_location(void);
+
 //FIXME: Use mac address or something
 //Should be unique to this device (MAC or similar)
 #define GAUS_DEVICE_ID CONFIG_GAUS_DEVICE_ID
@@ -72,6 +78,9 @@ static char *version_string(void);
 void gaus_communication_task(void *taskData) {
   char *device_access;
   char *device_secret;
+  char *device_id = get_device_id();
+  char *device_location = get_device_location();
+
   uint32_t poll_interval;
   gaus_session_t session;
 
@@ -83,7 +92,7 @@ void gaus_communication_task(void *taskData) {
       },
       {
           strdup("location"),
-          strdup(GAUS_DEVICE_LOCATION)
+          strdup(device_location)
       }
   };
   unsigned int updateCount = 0;
@@ -122,7 +131,7 @@ void gaus_communication_task(void *taskData) {
     // GAUS LIBRARY STEP 2: Register device
     // Only required if device is unregistered.  The results of this should be persisted to the device.
     display_text_small(0, BOTTOM, STATUS_COLOR, "Register device...\r");
-    err = gaus_register(GAUS_PRODUCT_ACCESS, GAUS_PRODUCT_SECRET, GAUS_DEVICE_ID,
+    err = gaus_register(GAUS_PRODUCT_ACCESS, GAUS_PRODUCT_SECRET, device_id,
                         &device_access, &device_secret, &poll_interval);
     if (err) {
       ESP_LOGE(TAG, "An error occurred registering!");
@@ -215,6 +224,8 @@ void gaus_communication_task(void *taskData) {
   }
   free(device_access);
   free(device_secret);
+  free(device_id);
+  free(device_location);
   free(session.device_guid);
   free(session.product_guid);
   free(session.token);
@@ -235,13 +246,17 @@ void app_main() {
 
   initialize_display();
 
-  display_text_big(CENTER, 0, ID_COLOR, "%s\r", GAUS_DEVICE_ID);
-
   display_text_small(0, BIG_FONT_HEIGHT + LINE_SPACING, DETAILS_COLOR, "FW Version: v%d.%d.%d\r",
                      FIRMWARE_VERSION_MAJOR,
                      FIRMWARE_VERSION_MINOR, FIRMWARE_VERSION_PATCH);
+
+  char *device_id = get_device_id();
+  char *device_location = get_device_location();
+  display_text_big(CENTER, 0, ID_COLOR, "%s\r", device_id);
   display_text_small(0, BIG_FONT_HEIGHT + SMALL_FONT_HEIGHT + LINE_SPACING * 2, DETAILS_COLOR, "Location: %s\r",
-                     GAUS_DEVICE_LOCATION);
+                     device_location);
+  free(device_id);
+  free(device_location);
 
   display_text_small(0, BOTTOM, STATUS_COLOR, "Init wifi...\r");
   initialise_wifi();
@@ -267,4 +282,36 @@ static char *version_string(void) {
   version = malloc(len);
   snprintf(version, len, "%d.%d.%d", FIRMWARE_VERSION_MAJOR, FIRMWARE_VERSION_MINOR, FIRMWARE_VERSION_PATCH);
   return version;
+}
+
+//Returns a strong pointer to a string with device id
+static char *get_device_id(void) {
+  char *device_id;
+
+  //Retrieve device id from NonVolatileStorage (NVS)
+  esp_err_t id_error = get_nvs_str("device_id", &device_id);
+
+  //Set id if not set.
+  if (id_error != ESP_OK) {
+    device_id = strdup(GAUS_DEVICE_ID);
+    ESP_LOGW(TAG, "Did not find id!  Setting to default %s", device_id);
+    set_nvs_str("device_id", device_id);
+  }
+  return device_id;
+}
+
+//Returns a strong pointer to a string with device location
+static char *get_device_location(void) {
+  char *device_location;
+
+  //Retrieve device location from NonVolatileStorage (NVS)
+  esp_err_t location_error = get_nvs_str("device_location", &device_location);
+
+  //Set location if not set.
+  if (location_error != ESP_OK) {
+    device_location = strdup(GAUS_DEVICE_LOCATION);
+    ESP_LOGW(TAG, "Did not find location!  Setting to default %s", device_location);
+    set_nvs_str("device_location", device_location);
+  }
+  return device_location;
 }
