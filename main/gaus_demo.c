@@ -52,16 +52,6 @@ static const char *TAG = "gaus-demo";
 #define GAUS_PRODUCT_ACCESS CONFIG_GAUS_PRODUCT_ACCESS
 #define GAUS_PRODUCT_SECRET CONFIG_GAUS_PRODUCT_SECRET
 
-//Blink out the firmware version:
-//Sec on/off per number
-#define BLINK_FIRMWARE_NUM 250
-#define BLINK_FIRMWARE_DOT 2000
-#define BLINK_FIRMWARE_START_END 3000 //before/after
-
-//Example: 1.2.3: with 0.5, 1, 2
-// 2-0.5-P1-0.5-0.5-P1-0.5-0.5-0.5-2
-static void blinkVersion(void);
-
 //Returns a strong pointer to a null terminated version string
 static char *version_string(void);
 
@@ -94,8 +84,6 @@ void gaus_communication_task(void *taskData) {
   gpio_pad_select_gpio(BLINK_GPIO);
   /* Set the GPIO as a push/pull output */
   gpio_set_direction(BLINK_GPIO, GPIO_MODE_OUTPUT);
-
-  blinkVersion();
 
   //Print Gaus library version
   gaus_version_t version = gaus_client_library_version();
@@ -235,6 +223,9 @@ void app_main() {
 
   initialize_display();
 
+  display_text_small(0, BIG_FONT_HEIGHT + LINE_SPACING, TFT_YELLOW, "FW Version: v%d.%d.%d\r", FIRMWARE_VERSION_MAJOR,
+                     FIRMWARE_VERSION_MINOR, FIRMWARE_VERSION_PATCH);
+
   display_text_small(0, BOTTOM, TFT_GREEN, "Init wifi...\r");
   initialise_wifi();
   if (!wait_on_wifi()) {
@@ -259,37 +250,4 @@ static char *version_string(void) {
   version = malloc(len);
   snprintf(version, len, "%d.%d.%d", FIRMWARE_VERSION_MAJOR, FIRMWARE_VERSION_MINOR, FIRMWARE_VERSION_PATCH);
   return version;
-}
-
-static void blinkVersion(void) {
-  ESP_LOGI(TAG, "Blinking for fw-version %d.%d.%d", FIRMWARE_VERSION_MAJOR, FIRMWARE_VERSION_MINOR,
-           FIRMWARE_VERSION_PATCH);
-  //Start:
-  gpio_set_level(BLINK_GPIO, 1);
-  vTaskDelay(BLINK_FIRMWARE_START_END / portTICK_PERIOD_MS);
-  gpio_set_level(BLINK_GPIO, 0);
-  vTaskDelay(BLINK_FIRMWARE_START_END / portTICK_PERIOD_MS);
-  for (int i = 0; i <= FIRMWARE_VERSION_MAJOR * 2; i++) {
-    gpio_set_level(BLINK_GPIO, i % 2);
-    vTaskDelay(BLINK_FIRMWARE_NUM / portTICK_PERIOD_MS);
-  }
-  //Dot
-  gpio_set_level(BLINK_GPIO, 0);
-  vTaskDelay(BLINK_FIRMWARE_DOT / portTICK_PERIOD_MS);
-  for (int i = 0; i <= FIRMWARE_VERSION_MINOR * 2; i++) {
-    gpio_set_level(BLINK_GPIO, i % 2);
-    vTaskDelay(BLINK_FIRMWARE_NUM / portTICK_PERIOD_MS);
-  }
-  //Dot
-  gpio_set_level(BLINK_GPIO, 0);
-  vTaskDelay(BLINK_FIRMWARE_DOT / portTICK_PERIOD_MS);
-  for (int i = 0; i <= FIRMWARE_VERSION_PATCH * 2; i++) {
-    gpio_set_level(BLINK_GPIO, i % 2);
-    vTaskDelay(BLINK_FIRMWARE_NUM / portTICK_PERIOD_MS);
-  }
-  //End:
-  gpio_set_level(BLINK_GPIO, 0);
-  vTaskDelay(BLINK_FIRMWARE_START_END / portTICK_PERIOD_MS);
-  gpio_set_level(BLINK_GPIO, 1);
-  vTaskDelay(BLINK_FIRMWARE_START_END / portTICK_PERIOD_MS);
 }
