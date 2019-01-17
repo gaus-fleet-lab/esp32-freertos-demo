@@ -21,4 +21,6 @@
 
 void send_update_status_report(gaus_session_t *session, char *phase, char *status, char *logLine, char *updateId);
 
+void send_update_temperature_and_humidity_report(gaus_session_t *session, float temperature, float humidity);
+
 #endif
