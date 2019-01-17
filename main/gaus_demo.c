@@ -17,6 +17,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_system.h"
@@ -34,11 +35,15 @@
 #include "gaus_report.h"
 #include "sntp.h"
 #include "display.h"
+#include "dht11.h"
 
 //Tag for logging
 static const char *TAG = "gaus-demo";
 
 #define BLINK_GPIO 13
+//Signal pin for DH11
+#define PIN_NUM_DH11 4
+
 #define FIRMWARE_VERSION_MAJOR 0
 #define FIRMWARE_VERSION_MINOR 0
 #define FIRMWARE_VERSION_PATCH 0
@@ -206,8 +211,20 @@ void gaus_communication_task(void *taskData) {
     }
 
     for (int i = 60; i >= 0; i--) {
-      ESP_LOGI(TAG, "Sleeping for %d seconds...", i);
+      ESP_LOGI(TAG, "Next update check in %d seconds...", i);
       gpio_set_level(BLINK_GPIO, i % 2);
+      if (i % 2) {
+        //Measure temperature and report:
+        float temperature = dht11_readTemperature(false, false);
+        //Measure humidity and report:
+        float humidity = dht11_readHumidity(false);
+        if (!isnan(temperature) && !isnan(humidity)) {
+          ESP_LOGI(TAG, "Reporting: Temperature: %.2f   Humidity: %.2f", temperature, humidity);
+          send_update_temperature_and_humidity_report(&session, temperature, humidity);
+          display_text_small(0, BIG_FONT_HEIGHT + SMALL_FONT_HEIGHT * 2 + LINE_SPACING * 3, STATUS_COLOR,
+                             "T: %.1fC   H: %.1f\r", temperature, humidity);
+        }
+      }
       vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
   }
@@ -243,6 +260,8 @@ void app_main() {
 
   reset_count++;
   set_nvs_u32("reset_count", reset_count);
+
+  dht11_init(PIN_NUM_DH11);
 
   initialize_display();
 
