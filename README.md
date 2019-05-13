@@ -17,7 +17,7 @@ can also pretty much ignore the files under `components` as they're just externa
 
 # Building
 
-In order to build you'll need the esp32 tools as described here: [Esp32 Getting Started](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html)
+In order to build you'll need the esp32 tools as described here: [Esp32 Getting Started](https://docs.espressif.com/projects/esp-idf/en/latest/get-started/index.html)  It's suggested that you use the same version as we use in CI.  You can check out the (CI Dockerfile)[https://github.com/gaus-fleet-lab/esp32-freertos/blob/master/Dockerfile] for hints.
 
 Once you have all of the tools installed you'll need to:
 - Install `automake`
