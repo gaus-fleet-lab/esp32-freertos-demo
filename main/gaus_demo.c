@@ -44,9 +44,13 @@ static const char *TAG = "gaus-demo";
 //Signal pin for DH11
 #define PIN_NUM_DH11 4
 
-#define FIRMWARE_VERSION_MAJOR 0
-#define FIRMWARE_VERSION_MINOR 0
-#define FIRMWARE_VERSION_PATCH 0
+#define MODEM_VERSION_MAJOR 1
+#define MODEM_VERSION_MINOR 0
+#define MODEM_VERSION_PATCH 0
+
+#define DSP_VERSION_MAJOR 1
+#define DSP_VERSION_MINOR 1
+#define DSP_VERSION_PATCH 1
 
 /* The examples use simple configuration that you can set via
    'make menuconfig'.
@@ -59,6 +63,7 @@ static const char *TAG = "gaus-demo";
 
 //Returns a strong pointer to a null terminated version string
 static char *version_string(void);
+static char *dsp_version_string(void);
 
 //Returns a strong pointer to a null terminated id string
 static char *get_device_id(void);
@@ -89,15 +94,18 @@ void gaus_communication_task(void *taskData) {
   uint32_t poll_interval;
   gaus_session_t session;
 
-  unsigned int filterCount = 2;
-  gaus_header_filter_t filters[2] = {
+  unsigned int filterCount = 3;
+  gaus_header_filter_t filters[3] = {
       {
-          strdup("firmware-version"),
+          strdup("modem-version"),
           version_string()
       },
       {
           strdup("location"),
           strdup(device_location)
+      }, {
+          strdup("dsp-version"),
+          dsp_version_string()
       }
   };
   unsigned int updateCount = 0;
@@ -199,9 +207,9 @@ void gaus_communication_task(void *taskData) {
                                     updates[0].update_id);
           goto FAIL;
         } else {
-          send_update_status_report(&session, "install", "success", "Installed new firmware version.",
+          send_update_status_report(&session, "install", "success", "Installed new modem version.",
                                     updates[0].update_id);
-          ESP_LOGW(TAG, "New firmware version installed.  Restarting device.");
+          ESP_LOGW(TAG, "New modem version installed.  Restarting device.");
           goto INSTALL_SUCCESS;
         }
       } else {
@@ -236,6 +244,8 @@ void gaus_communication_task(void *taskData) {
   free(filters[0].filter_value);
   free(filters[1].filter_name);
   free(filters[1].filter_value);
+  free(filters[2].filter_name);
+  free(filters[2].filter_value);
   if (err) {
     free(err->description);
   }
@@ -265,15 +275,19 @@ void app_main() {
 
   initialize_display();
 
-  display_text_small(0, BIG_FONT_HEIGHT + LINE_SPACING, DETAILS_COLOR, "FW Version: v%d.%d.%d\r",
-                     FIRMWARE_VERSION_MAJOR,
-                     FIRMWARE_VERSION_MINOR, FIRMWARE_VERSION_PATCH);
+  display_text_small(0, BIG_FONT_HEIGHT + LINE_SPACING, DETAILS_COLOR, "Modem v: v%d.%d.%d\r",
+                     MODEM_VERSION_MAJOR,
+                     MODEM_VERSION_MINOR, MODEM_VERSION_PATCH);
 
   char *device_id = get_device_id();
   char *device_location = get_device_location();
   display_text_big(CENTER, 0, ID_COLOR, "%s\r", device_id);
   display_text_small(0, BIG_FONT_HEIGHT + SMALL_FONT_HEIGHT + LINE_SPACING * 2, DETAILS_COLOR, "Location: %s\r",
                      device_location);
+  display_text_small(0, BIG_FONT_HEIGHT + SMALL_FONT_HEIGHT * 2 + LINE_SPACING * 2, DETAILS_COLOR, "dsp v: v%d.%d.%d\r",
+                     DSP_VERSION_MAJOR,
+                     DSP_VERSION_MINOR,
+                     DSP_VERSION_PATCH);
   free(device_id);
   free(device_location);
 
@@ -297,12 +311,21 @@ void app_main() {
 static char *version_string(void) {
   char *version;
   size_t len =
-      snprintf(NULL, 0, "%d.%d.%d", FIRMWARE_VERSION_MAJOR, FIRMWARE_VERSION_MINOR, FIRMWARE_VERSION_PATCH) + 1;
+      snprintf(NULL, 0, "%d.%d.%d", MODEM_VERSION_MAJOR, MODEM_VERSION_MINOR, MODEM_VERSION_PATCH) + 1;
   version = malloc(len);
-  snprintf(version, len, "%d.%d.%d", FIRMWARE_VERSION_MAJOR, FIRMWARE_VERSION_MINOR, FIRMWARE_VERSION_PATCH);
+  snprintf(version, len, "%d.%d.%d", MODEM_VERSION_MAJOR, MODEM_VERSION_MINOR, MODEM_VERSION_PATCH);
   return version;
 }
 
+
+static char *dsp_version_string(void) {
+  char *version;
+  size_t len =
+      snprintf(NULL, 0, "%d.%d.%d", DSP_VERSION_MAJOR, DSP_VERSION_MINOR, DSP_VERSION_PATCH) + 1;
+  version = malloc(len);
+  snprintf(version, len, "%d.%d.%d", DSP_VERSION_MAJOR, DSP_VERSION_MINOR, DSP_VERSION_PATCH);
+  return version;
+}
 //Returns a strong pointer to a string with device id
 static char *get_device_id(void) {
   char *device_id;
